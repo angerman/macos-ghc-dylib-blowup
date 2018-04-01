@@ -1,43 +1,24 @@
-## Haskell Setup
+# malformed mach-o: load commands size (...) > 32768
 
-1. If you haven't already, [install Stack](https://haskell-lang.org/get-started)
-	* On POSIX systems, this is usually `curl -sSL https://get.haskellstack.org/ | sh`
-2. Install the `yesod` command line tool: `stack install yesod-bin --install-ghc`
-3. Build libraries: `stack build`
+The way GHC constructs dylibs, and the way cabal places dylibs with `cabal new-build`, can
+result in load-command-size blowups.
 
-If you have trouble, refer to the [Yesod Quickstart guide](https://www.yesodweb.com/page/quickstart) for additional detail.
+This repository is a reproduction case to illustrate the issue.
 
-## Development
+# Build
 
-Start a development server with:
-
-```
-stack exec -- yesod devel
+```shell
+$ cat cabal.project|grep -v "^packages"|xargs cabal unpack
+$ cabal new-build
 ```
 
-As your code changes, your site will be automatically recompiled and redeployed to localhost.
-
-## Tests
+the first command will unpack all packages listed in the `cabal.project` file; the second will then build the project with `cabal new-build`. This should (while the issue persists) yield the following (or similar error):
 
 ```
-stack test --flag test-project:library-only --flag test-project:dev
+ghc: panic! (the 'impossible' happened)
+  (GHC version 8.4.1 for x86_64-apple-darwin):
+	Loading temp shared object failed: dlopen(/var/folders/fv/xqjrpfj516n5xq_m_ljpsjx00000gn/T/ghc75192_0/libghc_19.dylib, 5): no suitable image found.  Did find:
+	/var/folders/fv/xqjrpfj516n5xq_m_ljpsjx00000gn/T/ghc75192_0/libghc_19.dylib: malformed mach-o: load commands size (34104) > 32768
+
+Please report this as a GHC bug:  http://www.haskell.org/ghc/reportabug
 ```
-
-(Because `yesod devel` passes the `library-only` and `dev` flags, matching those flags means you don't need to recompile between tests and development, and it disables optimization to speed up your test compile times).
-
-## Documentation
-
-* Read the [Yesod Book](https://www.yesodweb.com/book) online for free
-* Check [Stackage](http://stackage.org/) for documentation on the packages in your LTS Haskell version, or [search it using Hoogle](https://www.stackage.org/lts/hoogle?q=). Tip: Your LTS version is in your `stack.yaml` file.
-* For local documentation, use:
-	* `stack haddock --open` to generate Haddock documentation for your dependencies, and open that documentation in a browser
-	* `stack hoogle <function, module or type signature>` to generate a Hoogle database and search for your query
-* The [Yesod cookbook](https://github.com/yesodweb/yesod-cookbook) has sample code for various needs
-
-## Getting Help
-
-* Ask questions on [Stack Overflow, using the Yesod or Haskell tags](https://stackoverflow.com/questions/tagged/yesod+haskell)
-* Ask the [Yesod Google Group](https://groups.google.com/forum/#!forum/yesodweb)
-* There are several chatrooms you can ask for help:
-	* For IRC, try Freenode#yesod and Freenode#haskell
-	* [Functional Programming Slack](https://fpchat-invite.herokuapp.com/), in the #haskell, #haskell-beginners, or #yesod channels.
